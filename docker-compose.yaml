@@ -90,6 +90,7 @@ services:
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/plugins:/opt/airflow/plugins
       - ./elt_script:/opt/airflow/elt_script
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
       - AIRFLOW__CORE_EXECUTOR=LocalExecutor
@@ -110,6 +111,7 @@ services:
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/plugins:/opt/airflow/plugins
       - ./elt_script:/opt/airflow/elt_script
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
       - AIRFLOW__CORE_EXECUTOR=LocalExecutor
@@ -117,7 +119,9 @@ services:
 
 networks:
   elt_network:
+    name: elt_network
     driver: bridge
+    attachable: true
 
 volumes:
   destination_db_data:

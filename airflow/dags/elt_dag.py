@@ -15,7 +15,6 @@ default_args = {
     'email_on_retry': False,
 }
 
-
 def run_elt_script():
     script_path = "/opt/airflow/elt_script/elt_script.py"
     result = subprocess.run(["python", script_path],
@@ -25,19 +24,19 @@ def run_elt_script():
     else:
         print(result.stdout)
 
-
 dag = DAG(
     'elt_and_dbt',
     default_args=default_args,
-    description='An ELT workflow with dbt',
+    description='An ELT workflow with dbt transformation',
     start_date=datetime(2025, 5, 18),
+    schedule_interval=None,
     catchup=False,
 )
 
 t1 = PythonOperator(
     task_id='run_elt_script',
     python_callable=run_elt_script,
-    dag=dag,
+    dag=dag
 )
 
 t2 = DockerOperator(
@@ -45,20 +44,27 @@ t2 = DockerOperator(
     image='ghcr.io/dbt-labs/dbt-postgres:1.4.7',
     command=[
         "run",
-        "--profiles-dir",
-        "/root",
-        "--project-dir",
-        "/dbt",
+        "--profiles-dir", "/root/.dbt",
+        "--project-dir", "/dbt",
         "--full-refresh"
     ],
     auto_remove=True,
     docker_url="unix://var/run/docker.sock",
-    network_mode="bridge",
+    network_mode="elt_network",
+    mount_tmp_dir=False,
     mounts=[
         Mount(source='/Users/ege.bozdemir/Desktop/Projects/elt/postgres_transformations',
               target='/dbt', type='bind'),
-        Mount(source='/Users/ege.bozdemir/.dbt', target='/root', type='bind'),
+        Mount(source='/Users/ege.bozdemir/.dbt', 
+              target='/root/.dbt', type='bind'),
     ],
+    environment={
+        'DBT_HOST': 'destination_postgres',
+        'DBT_PORT': '5432',
+        'DBT_USER': 'postgres',
+        'DBT_PASS': 'secret',
+        'DBT_DBNAME': 'destination_db'
+    },
     dag=dag
 )
 
